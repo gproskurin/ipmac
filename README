@@ -1,0 +1,46 @@
+ipmac netgraph node:
+
+Stores (ip,mac) pairs in balanced binary tree (red-black)
+for fast searching.
+
+hooks:
+in, match, mismatch, notfound, unknown
+
+How it works:
+Packets received on "in" hook are checked for ip/mac and forwarded to one of hooks:
+match - if ip and mac matches
+mismatch - ip found in tree, but mac not matches
+notfound - ip not found in tree
+unknown - unknown packet (proto is not ip, etc...)
+
+Packets received on other hooks are discarded.
+
+Usage example:
+
+(vr0 - network interface)
+
+mkpeer vr0: split lower mixed
+name vr0:lower spl1
+mkpeer vr0: split upper mixed
+name vr0:upper spl2
+connect spl1: spl2: in out
+
+mkpeer spl2: one2many in one
+name spl2:in o2m
+
+mkpeer spl1: ipmac out in
+name spl1:out ipmac
+connect ipmac: o2m: match many1
+connect ipmac: o2m: mismatch many2
+connect ipmac: o2m: notfound many3
+connect ipmac: o2m: unknown many4
+
+Adding (ip,mac) pair:
+msg ipmac: add { ip=1.2.3.4 mac=00:01:02:03:04:05 }
+
+Statistics:
+msg ipmac: stat
+
+Clear internal tree:
+msg ipmac: clear
+
